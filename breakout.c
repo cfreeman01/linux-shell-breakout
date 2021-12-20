@@ -33,8 +33,8 @@ typedef enum GameStatus
 typedef struct Block
 {
     char char_seq[50]; //sequence of characters to display block
-    unsigned short x;  //x position
-    unsigned short y;  //y position
+    int x;             //x position
+    int y;             //y position
     int status;        //1=not destroyed, 0=destroyed
 } Block;
 
@@ -42,15 +42,15 @@ typedef struct Paddle
 {
     char block_seq[50];    //character sequence to display one character of the paddle
     unsigned short length; //number of characters in a row to display the paddle
-    unsigned short x;      //position of the leftmost character of the paddle
-    unsigned short y;
+    int x;                 //position of the leftmost character of the paddle
+    int y;
 } Paddle;
 
 typedef struct Ball
 {
     char char_seq[50]; //character sequence to display the ball
-    unsigned short x;  //x position
-    unsigned short y;  //y position
+    int x;             //x position
+    int y;             //y position
     short xv;          //x velocity
     short yv;          //y velocity
 } Ball;
@@ -226,7 +226,7 @@ void move_paddle(Paddle *paddle)
         break;
 
     case 'd': //move the paddle right
-        if (paddle->x + paddle->length == num_cols + 1)
+        if (paddle->x + paddle->length == num_cols)
             break;
         gotoxy(paddle->x, paddle->y);
         printf(" ");
@@ -265,6 +265,25 @@ GameStatus update_game(Block blocks[], Paddle *paddle, Ball *ball, int num_block
     ball->y += ball->yv; //update ball's position
     ball->x += ball->xv;
 
+    //check if ball collides with borders
+    if (ball->y <= 0)
+    {
+        ball->yv = -ball->yv;
+        ball->y = 0;
+    }
+    if (ball->x <= 0)
+    {
+        ball->xv = -ball->xv;
+        ball->x = 0;
+    }
+    if (ball->x >= num_cols)
+    {
+        ball->xv = -ball->xv;
+        ball->x = num_cols;
+    }
+    if (ball->y >= paddle->y + 3)
+        return LOST;
+
     //check if ball collides with a block, and also check if all blocks are destroyed
     int all_destroyed = 1;
     for (int i = 0; i < num_blocks; i++)
@@ -300,16 +319,6 @@ GameStatus update_game(Block blocks[], Paddle *paddle, Ball *ball, int num_block
         }
     }
 
-    //check if ball collides with borders
-    if (ball->y == 0)
-        ball->yv = -ball->yv;
-    if (ball->x == 0)
-        ball->xv = 1;
-    if (ball->x == num_cols + 1)
-        ball->xv = -1;
-    if (ball->y >= paddle->y + 3)
-        return LOST;
-
     gotoxy(ball->x, ball->y); //draw ball at new position
     printf("%s", ball->char_seq);
     return ACTIVE;
@@ -322,7 +331,7 @@ GameStatus update_game(Block blocks[], Paddle *paddle, Ball *ball, int num_block
  ***/
 void bouncing_message_sequence(char *message, int message_length)
 {
-    struct timeval lost_time; //keep track of time so that "you lost" message
+    struct timeval lost_time; //keep track of time so that message
     struct timeval curr_time; //is displayed for at least 3 seconds
     double diff = 0;
     gettimeofday(&lost_time, NULL);
@@ -331,8 +340,8 @@ void bouncing_message_sequence(char *message, int message_length)
     ioctl(STDIN_FILENO, TIOCGWINSZ, &size);
 
     unsigned short message_x = size.ws_col / 2,
-                   message_y = size.ws_row / 2;             //position of the bouncing "you lost" message
-    unsigned short message_xv = (rand() % 2 == 1) ? 1 : -1, //velocity of the bouncing "you lost" message
+                   message_y = size.ws_row / 2;             //position of the bouncing message
+    unsigned short message_xv = (rand() % 2 == 1) ? 1 : -1, //velocity of the bouncing message
         message_yv = (rand() % 2 == 1) ? 1 : -1;
 
     system("clear");
