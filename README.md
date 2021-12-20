@@ -1,5 +1,6 @@
 ﻿# Linux Shell/Breakout Game
 ![gameplay video](gameplay.gif)
+
 A simple Linux shell that also allows you to play the Atari game *Breakout* in your command terminal.
 ## Features
 The shell supports:
